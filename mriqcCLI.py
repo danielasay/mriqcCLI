@@ -73,9 +73,7 @@ qc = mriqcCLI()
 
 selectedStudy = qc.selectStudy(studyPaths)
 
-print(selectedStudy)
 
-#print(studyPaths[selectedStudy])
 
 
 
