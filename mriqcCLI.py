@@ -158,10 +158,6 @@ class mriqcCLI():
 		list.pack(padx = 10, pady = 10,
 					expand = YES, fill = "both")
       
-		#subjectList =["C", "C++", "C#", "Java", "Python",
-			#"R", "Go", "Ruby", "JavaScript", "Swift",
-			#"SQL", "Perl", "XML"]
-      
 		for each_item in range(len(subjectList)):
 			list.insert(END, subjectList[each_item])
 			list.itemconfig(each_item, bg = "white")
