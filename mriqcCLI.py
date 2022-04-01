@@ -81,11 +81,12 @@ class mriqcCLI():
 		for sub in os.listdir():
 			if sub.startswith("sub"):
 				subList.append(sub)
-		print("There are a total of " + str(len(subList)) + " subjects.")#Here is a list of them all:\n")
+		print("There are a total of " + str(len(subList)) + " subjects:")#Here is a list of them all:\n")
 		print("")
 		time.sleep(1)
+		subList.sort()
 		df = pd.DataFrame(subList, columns=['subject'])
-		#print(df)
+		print(df)
 		subjectConfirmation = {
 			inq.Confirm('subjectConfirmation',
 							message="Would you like to qc all " + str(len(subList)) + " subjects?",
@@ -100,14 +101,11 @@ class mriqcCLI():
 		else:
 			print("Please select the subjects you would like to qc:\n")
 			print("(this may take a minute if you're on a remote machine)\n")
-			subList.sort()
+			#subList.sort()
 			mriqcCLI.subjectGUI(self, subList)
 			# get contents of txt file into array
 
 	def subjectGUI(self, subjectList):
-    	# use tkinter to get user input on subjects 
-    	#sys.stdout = open('subjectSubset.txt', 'w')
-    	#sys.stdout.close()
 		window = Tk()
 		w = 500
 		h = 450
@@ -164,7 +162,7 @@ class mriqcCLI():
       
     	# Attach listbox to vertical scrollbar
 		yscrollbar.config(command = list.yview)
-		subjects = Button(window, text="Save Selection", command=saveSelected).pack()
+		Button(window, text="Save Selection", command=saveSelected).pack()
 		Button(window, text="Close Window", command=quit).pack()
 		window.mainloop()
 
