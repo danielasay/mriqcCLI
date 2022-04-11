@@ -170,19 +170,7 @@ class mriqcCLI():
 				#subjects.append(op)
 			print("Selection Saved!")
 
-			#x.set(subjects)
-			#return subjects
-			#sys.stdout = open('subjectSubset.csv', 'w')
-			#print("subs")
-			#for i in subjects:
-			#	print(i)
-			#sys.stdout.close()
-
-		#def something():
-		#	result = [list.get(i) for i in list.curselection()]
-
-
-    	
+ 	
 		def quit():
 			window.destroy()
 
