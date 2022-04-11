@@ -20,6 +20,8 @@ class mriqcCLI():
 	def __init__(self):	
 		pass
 
+	# this method will provide the user with a list of studies and ask which one they would like to qc. (limit to one selection for now)
+	# if the study doesn't have a valid BIDS directory with data, they will be asked to select a different study.
 
 	def selectStudy(self, studyPaths):
 		while True:
@@ -69,11 +71,17 @@ class mriqcCLI():
 		return studyAnswer, BIDSDir
 
 
+	# this method confirms (or not) that there's a valid BIDS dir in the studyPaths dictionary for the study selected by the user. 
+
 	def validateBIDSDir(self, study):
 		if studyPaths[study] == "":
 			return False
 		else:
 			return True
+
+	# the user will be shown a list of all the available subjects in the BIDS directory of their chosen study. Then they'll be asked to 
+	# choose whether they'd like to qc all the subjects, or just a subset. If they just want a subset, a gui will pop up and they will be prompted
+	# to select the subjects they want to run.
 
 	def getSubs(self, BIDSDir):
 		os.chdir(BIDSDir)
@@ -83,7 +91,7 @@ class mriqcCLI():
 				subList.append(sub)
 		print("There are a total of " + str(len(subList)) + " subjects. Here is a list of them all:\n")
 		print("")
-		time.sleep(1.5)
+		time.sleep(1.25)
 		subList.sort()
 		df = pd.DataFrame(subList, columns=['subject'])
 		print(df)
@@ -102,6 +110,9 @@ class mriqcCLI():
 		else:
 			subset = mriqcCLI.subjectSubset(self, subList, BIDSDir)
 			return subset
+
+	# this method will be triggered when the user does not want to qc each available subject. It will bring up a gui for them to choose subjects
+	# and ask them to confirm the subject list they've selected.
 
 	def subjectSubset(self, subList, BIDSDir):
 		print("Please select the subjects you would like to qc:\n")
@@ -144,10 +155,15 @@ class mriqcCLI():
 					print("You did not confirm your subject selection. Please try again.")
 					time.sleep(1.5)
 					continue
-
-
-			return flatSubs
+			# place subject list into 'regular' (non-numpy) array
+			s = []
+			for i in flatSubs:
+				s.append(i)
+			return s
 			
+
+	# method that includes all of the specifications and sub-functions for the gui. The user will see a list of subjects for the chosen study and be able to 
+	# select all the subjects they would like to qc.
 
 	def subjectGUI(self, subjectList):
 		subjects = []
@@ -190,6 +206,9 @@ class mriqcCLI():
 			list.insert(END, subjectList[each_item])
 			list.itemconfig(each_item, bg = "white")
 
+		# button/function that will save the the list of subjects that the user selected to a csv file called subjectSubset.csv
+		# this is a temporary file and will be deleted during processing.
+
 		def saveSelected():
 			subprocess.run(['touch', 'subjectSubset.csv'])
 			subName = list.curselection()
@@ -201,7 +220,8 @@ class mriqcCLI():
 					writer.writerow(sub)
 			print("Selection Saved!")
 
- 	
+ 		# button/function that will close the gui.
+
 		def quit():
 			window.destroy()
 
@@ -213,19 +233,24 @@ class mriqcCLI():
 		window.mainloop()
 
 
+	# this method is the core of the program and will run mriqc on each subject that the user specified, unless qc data already exists for the subject.
+	# if qc data exists, the user will be asked if they would like to override it
+
 	def runMriqc(self, subjects, BIDSDir):
 		pass
 
 
-
+# This is a python dictionary that contains key-value pairs of studies and their respective BIDS directories
 studyPaths = {"opioid": "/PROJECTS/REHARRIS/opioid/opioid_BIDS", "explosiveSync": "", "bacpac": "", "bacpacBest": "", "mapp2": "/PROJECTS/MAPP/MAPP2/data/MAPP2_BIDS", "cpira2": ""}
 
+# create instance of the mriqcCLI class
 qc = mriqcCLI()
 
+# get user specified study and its corresponding BIDS directory
 selectedStudy, BIDSDir = qc.selectStudy(studyPaths)
 
+# get list of the subjects specified by the user
 subjects = qc.getSubs(BIDSDir)
 
-print(subjects)
 
 
