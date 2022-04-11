@@ -81,8 +81,9 @@ class mriqcCLI():
 		for sub in os.listdir():
 			if sub.startswith("sub-"):
 				subList.append(sub)
-		print("There are a total of " + str(len(subList)) + " subjects:")#Here is a list of them all:\n")
+		print("There are a total of " + str(len(subList)) + " subjects. Here is a list of them all:\n")
 		print("")
+		time.sleep(1.5)
 		subList.sort()
 		df = pd.DataFrame(subList, columns=['subject'])
 		print(df)
@@ -99,21 +100,52 @@ class mriqcCLI():
 			return subList
 			time.sleep(1)
 		else:
-			print("Please select the subjects you would like to qc:\n")
-			print("(this may take a minute if you're on a remote machine)\n")
-			# bring up GUI for user to select subjects
-			mriqcCLI.subjectGUI(self, subList)
-			# grab the subject sublist selected by the user
-			os.chdir(BIDSDir)
-			subs = []
-			with open("subjectSubset.csv", "r") as subjects:
-				read_file = csv.reader(subjects)
-				for p in read_file:
-					subs.append(p)
-				subs = np.array(subs)      
-				flatSubs = subs.flatten()
-			subprocess.run(['rm', 'subjectSubset.csv'])
-			# convert from np array to pandas dataframe to print out for readability?
+			subset = mriqcCLI.subjectSubset(self, subList, BIDSDir)
+			return subset
+
+	def subjectSubset(self, subList, BIDSDir):
+		print("Please select the subjects you would like to qc:\n")
+		print("(this may take a minute if you're on a remote machine)\n")
+		while True:
+			try:
+				# bring up GUI for user to select subjects
+				mriqcCLI.subjectGUI(self, subList)
+
+				# grab the subject sublist selected by the user
+				os.chdir(BIDSDir)
+				subs = []
+				with open("subjectSubset.csv", "r") as subjects:
+					read_file = csv.reader(subjects)
+					for j in read_file:
+						subs.append(j)
+					subs = np.array(subs)      
+					flatSubs = subs.flatten()
+				subprocess.run(['rm', 'subjectSubset.csv'])
+
+				# confirm with user that they selected the subs they wanted.
+				df = pd.DataFrame(flatSubs, columns=['subject'])
+				print("These are the subjects you've selected:")
+				print(df)
+				time.sleep(1)
+				subsetConfirmation = {
+					inq.Confirm('subsetConfirmation',
+									message="Please confirm your selection. ",
+								),
+				}
+
+				subsetAnswer = inq.prompt(subsetConfirmation)
+
+				if subsetAnswer['subsetConfirmation'] == True:
+					print("Subject Selection Confirmed.")
+					time.sleep(.5)
+				else:
+					raise ValueError("You did not confirm your subject selection. Please try again.")
+			except ValueError:
+					print("You did not confirm your subject selection. Please try again.")
+					time.sleep(1.5)
+					continue
+
+
 			return flatSubs
 			
 
@@ -167,7 +199,6 @@ class mriqcCLI():
 					writer = csv.writer(csv_file)
 					sub = [op]
 					writer.writerow(sub)
-				#subjects.append(op)
 			print("Selection Saved!")
 
  	
@@ -195,6 +226,6 @@ selectedStudy, BIDSDir = qc.selectStudy(studyPaths)
 
 subjects = qc.getSubs(BIDSDir)
 
-
+print(subjects)
 
 
