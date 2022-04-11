@@ -6,14 +6,14 @@
 # 4) Show progress bar
 # 5) Built funtionality for running qc on all subjects from all studies
 
-#import subprocess
-#subprocess.run(['source', 'activate', 'dan_env'])
 import os
 from tkinter import *
 import inquirer as inq
-import sys
 import time
 import pandas as pd
+import numpy as np
+import csv
+import subprocess
 
 
 class mriqcCLI():
@@ -45,7 +45,7 @@ class mriqcCLI():
 
 				if confirmationAnswer['studyConfirmation'] == True:
 					print("Study Selection Confirmed.")
-					time.sleep(1)
+					time.sleep(.5)
 				else:
 					raise ValueError("You did not confirm your selection. Please try again.")
 			except ValueError:
@@ -79,11 +79,10 @@ class mriqcCLI():
 		os.chdir(BIDSDir)
 		subList = []
 		for sub in os.listdir():
-			if sub.startswith("sub"):
+			if sub.startswith("sub-"):
 				subList.append(sub)
 		print("There are a total of " + str(len(subList)) + " subjects:")#Here is a list of them all:\n")
 		print("")
-		time.sleep(1)
 		subList.sort()
 		df = pd.DataFrame(subList, columns=['subject'])
 		print(df)
@@ -97,15 +96,29 @@ class mriqcCLI():
 
 		if subjectAnswer['subjectConfirmation'] == True:
 			print("Subject Selection Confirmed.")
+			return subList
 			time.sleep(1)
 		else:
 			print("Please select the subjects you would like to qc:\n")
 			print("(this may take a minute if you're on a remote machine)\n")
-			#subList.sort()
+			# bring up GUI for user to select subjects
 			mriqcCLI.subjectGUI(self, subList)
-			# get contents of txt file into array
+			# grab the subject sublist selected by the user
+			os.chdir(BIDSDir)
+			subs = []
+			with open("subjectSubset.csv", "r") as subjects:
+				read_file = csv.reader(subjects)
+				for p in read_file:
+					subs.append(p)
+				subs = np.array(subs)      
+				flatSubs = subs.flatten()
+			subprocess.run(['rm', 'subjectSubset.csv'])
+			# convert from np array to pandas dataframe to print out for readability?
+			return flatSubs
+			
 
 	def subjectGUI(self, subjectList):
+		subjects = []
 		window = Tk()
 		w = 500
 		h = 450
@@ -122,22 +135,7 @@ class mriqcCLI():
     	# and where it is placed
 		window.geometry('%dx%d+%d+%d' % (w, h, x, y))
 		window.title('Multiple selection')
-    
-		def saveSelected():
-			subjects = []
-			subName = list.curselection()
-			for i in subName:
-				op = list.get(i)
-				subjects.append(op)
-			print("Selection Saved!")
-			sys.stdout = open('subjectSubset.txt', 'w')
-			print(subjects)
-			sys.stdout.close()
-
-    	
-		def quit():
-			window.destroy()
-      
+  
     	# for scrolling vertically
 		yscrollbar = Scrollbar(window)
 		yscrollbar.pack(side = RIGHT, fill = Y)
@@ -159,12 +157,45 @@ class mriqcCLI():
 		for each_item in range(len(subjectList)):
 			list.insert(END, subjectList[each_item])
 			list.itemconfig(each_item, bg = "white")
+
+		def saveSelected():
+			subprocess.run(['touch', 'subjectSubset.csv'])
+			subName = list.curselection()
+			for i in subName:
+				op = list.get(i)
+				with open('subjectSubset.csv', mode='a+', newline='') as csv_file:
+					writer = csv.writer(csv_file)
+					sub = [op]
+					writer.writerow(sub)
+				#subjects.append(op)
+			print("Selection Saved!")
+
+			#x.set(subjects)
+			#return subjects
+			#sys.stdout = open('subjectSubset.csv', 'w')
+			#print("subs")
+			#for i in subjects:
+			#	print(i)
+			#sys.stdout.close()
+
+		#def something():
+		#	result = [list.get(i) for i in list.curselection()]
+
+
+    	
+		def quit():
+			window.destroy()
+
       
     	# Attach listbox to vertical scrollbar
 		yscrollbar.config(command = list.yview)
 		Button(window, text="Save Selection", command=saveSelected).pack()
 		Button(window, text="Close Window", command=quit).pack()
 		window.mainloop()
+
+
+	def runMriqc(self, subjects, BIDSDir):
+		pass
 
 
 
@@ -174,8 +205,7 @@ qc = mriqcCLI()
 
 selectedStudy, BIDSDir = qc.selectStudy(studyPaths)
 
-qc.getSubs(BIDSDir)
-
+subjects = qc.getSubs(BIDSDir)
 
 
 
