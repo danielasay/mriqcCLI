@@ -1,3 +1,6 @@
+# Created by: Daniel Asay on March 28th 
+# Last edit: April 11th
+
 # Thoughts for creating mriqc pipeline:
 
 # 1) Ask the user which study they want to qc
@@ -68,7 +71,7 @@ class mriqcCLI():
 				continue
 		BIDSDir = studyPaths[studyAnswer]
 
-		return studyAnswer, BIDSDir
+		return BIDSDir
 
 
 	# this method confirms (or not) that there's a valid BIDS dir in the studyPaths dictionary for the study selected by the user. 
@@ -237,6 +240,44 @@ class mriqcCLI():
 	# if qc data exists, the user will be asked if they would like to override it
 
 	def runMriqc(self, subjects, BIDSDir):
+		os.chdir(BIDSDir)
+		if not os.path.isdir("mriqc"):
+			os.makedirs("mriqc")
+		os.chdir("mriqc")
+		for i in range(len(subjects)):
+			if mriqcCLI.checkForData(subjects[i]):
+				mriqc = f"""
+					docker run -it --rm -v {BIDSDir}:/data:ro \
+					-v {BIDSDir}/mriqc:/out \
+					poldracklab/mriqc:latest /data /out participant --participant_label {subjects[i][4:]} --no-sub
+				"""
+				proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
+				proc1.wait()
+			else:
+				continue
+
+	# method will check if MRIQC output data already exists for a given subject
+
+	def checkForData(sub):
+		if os.path.isdir(sub) and os.path.getsize(sub) > 0:
+			print("**********\nMRIQC output already exists for " + sub + "!" + "\nSkipping....\n**********")
+			time.sleep(2)
+			return False
+		elif os.path.isdir(sub) and os.path.getsize(sub) == 0:
+			os.rmdir(sub)
+			print("Running MRIQC on subject: " + sub + "...")
+			time.sleep(2)
+			return True
+		else:
+			print("Running MRIQC on subject: " + sub + "...")
+			time.sleep(2)
+			return True
+
+
+	# this method cleans up the mriqc directory for the selected study.
+	# by placing all the html files into their respective sub directories.
+
+	def cleanDir():
 		pass
 
 
@@ -247,10 +288,9 @@ studyPaths = {"opioid": "/PROJECTS/REHARRIS/opioid/opioid_BIDS", "explosiveSync"
 qc = mriqcCLI()
 
 # get user specified study and its corresponding BIDS directory
-selectedStudy, BIDSDir = qc.selectStudy(studyPaths)
+BIDSDir = qc.selectStudy(studyPaths)
 
-# get list of the subjects specified by the user
+# get list of the subjects as specified by the user
 subjects = qc.getSubs(BIDSDir)
 
-
-
+qc.runMriqc(subjects, BIDSDir)
