@@ -17,6 +17,9 @@ import pandas as pd
 import numpy as np
 import csv
 import subprocess
+import shutil
+from tqdm import tqdm
+from yaspin import yaspin
 
 
 class mriqcCLI():
@@ -243,33 +246,57 @@ class mriqcCLI():
 		os.chdir(BIDSDir)
 		if not os.path.isdir("mriqc"):
 			os.makedirs("mriqc")
-		os.chdir("mriqc")
-		for i in range(len(subjects)):
+		mriqcDir = BIDSDir + "/mriqc"
+		os.chdir(mriqcDir)
+		for i in tqdm(range(len(subjects))):
 			if mriqcCLI.checkForData(subjects[i]):
-				mriqc = f"""
-					docker run -it --rm -v {BIDSDir}:/data:ro \
-					-v {BIDSDir}/mriqc:/out \
-					poldracklab/mriqc:latest /data /out participant --participant_label {subjects[i][4:]} --no-sub
-				"""
-				proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
-				proc1.wait()
+				startTime = time.time()
+				with yaspin(text="Processing subject..."):
+					time.sleep(1)
+					mriqc = f"""
+						docker run -it --rm -v {BIDSDir}:/data:ro \
+						-v {BIDSDir}/mriqc:/out \
+						poldracklab/mriqc:latest /data /out participant --participant_label {subjects[i][4:]} --no-sub
+					"""
+					proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
+					proc1.wait()
+					print("It took " + time.time() - startTime + "to process " + sub)
+					#mriqcCLI.cleanDir(sub, mriqcDir)
 			else:
 				continue
+
 
 	# method will check if MRIQC output data already exists for a given subject
 
 	def checkForData(sub):
 		if os.path.isdir(sub) and os.path.getsize(sub) > 0:
-			print("**********\nMRIQC output already exists for " + sub + "!" + "\nSkipping....\n**********")
+			print("**********\nMRIQC output already exists for " + sub + "!" + "\n**********")
 			time.sleep(2)
-			return False
+			fileStats = os.stat(sub)
+			modificationTime = time.ctime(fileStats[8])
+			overwriteConfirmation = {
+					inq.Confirm('overwriteConfirmation',
+									message="Overwrite the mriqc data generated on " + modificationTime + "?",
+								),
+				}
+
+			overwriteAnswer = inq.prompt(overwriteConfirmation)
+
+			if overwriteAnswer['overwriteConfirmation'] == True:
+				print("Overwriting data...")
+				time.sleep(.5)
+				return True
+			else:
+				print("Skipping subject...\n")
+				time.sleep(1.5)
+				return False
 		elif os.path.isdir(sub) and os.path.getsize(sub) == 0:
 			os.rmdir(sub)
-			print("Running MRIQC on subject: " + sub + "...")
+			print("Running MRIQC on " + sub)
 			time.sleep(2)
 			return True
 		else:
-			print("Running MRIQC on subject: " + sub + "...")
+			print("Running MRIQC on " + sub)
 			time.sleep(2)
 			return True
 
@@ -277,8 +304,13 @@ class mriqcCLI():
 	# this method cleans up the mriqc directory for the selected study.
 	# by placing all the html files into their respective sub directories.
 
-	def cleanDir():
-		pass
+	def cleanDir(sub, mriqcDir):
+		os.chdir(sub)
+		os.makedirs("html")
+		os.chdir(mriqcDir)
+		for file in os.listdir():
+			if file.startswith(sub) and file.endswith("html"):
+				shutil.move(file, sub + "/html")
 
 
 # This is a python dictionary that contains key-value pairs of studies and their respective BIDS directories
@@ -294,3 +326,4 @@ BIDSDir = qc.selectStudy(studyPaths)
 subjects = qc.getSubs(BIDSDir)
 
 qc.runMriqc(subjects, BIDSDir)
+
