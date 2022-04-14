@@ -260,13 +260,14 @@ class mriqcCLI():
 					"""
 					proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
 					proc1.wait()
-					print("It took " + time.time() - startTime + "to process " + sub)
+					totalTime = round((time.time() - StartTime) / 60)
+					print("It took " + str(totalTime) + " minutes to process " + sub)
 					#mriqcCLI.cleanDir(sub, mriqcDir)
 			else:
 				continue
 
 
-	# method will check if MRIQC output data already exists for a given subject
+	# method will check if MRIQC output data already exists for a given subject, ask if user wants to overwrite existing data
 
 	def checkForData(sub):
 		if os.path.isdir(sub) and os.path.getsize(sub) > 0:
@@ -276,7 +277,7 @@ class mriqcCLI():
 			modificationTime = time.ctime(fileStats[8])
 			overwriteConfirmation = {
 					inq.Confirm('overwriteConfirmation',
-									message="Overwrite the mriqc data generated on " + modificationTime + "?",
+									message="Overwrite the mriqc data generated on " + str(modificationTime[:10] + modificationTime[19:]) + " for " + sub + "?",
 								),
 				}
 
@@ -303,6 +304,7 @@ class mriqcCLI():
 
 	# this method cleans up the mriqc directory for the selected study.
 	# by placing all the html files into their respective sub directories.
+	# cannot use until directory permissions get figured out
 
 	def cleanDir(sub, mriqcDir):
 		os.chdir(sub)
