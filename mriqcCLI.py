@@ -1,5 +1,5 @@
 # Created by: Daniel Asay on March 28th 
-# Last edit: April 11th
+# Last edit: April 14th
 
 # Thoughts for creating mriqc pipeline:
 
@@ -131,19 +131,35 @@ class mriqcCLI():
 				# grab the subject sublist selected by the user
 				os.chdir(BIDSDir)
 				subs = []
-				with open("subjectSubset.csv", "r") as subjects:
-					read_file = csv.reader(subjects)
-					for j in read_file:
-						subs.append(j)
-					subs = np.array(subs)      
-					flatSubs = subs.flatten()
-				subprocess.run(['rm', 'subjectSubset.csv'])
+				try:
+					with open("subjectSubset.csv", "r") as subjects:
+						read_file = csv.reader(subjects)
+						for j in read_file:
+							subs.append(j)
+						subs = np.array(subs)      
+						flatSubs = subs.flatten()
+					subprocess.run(['rm', 'subjectSubset.csv'])
+				except FileNotFoundError:
+					quitConfirmation = {
+						inq.Confirm('quitConfirmation',
+							message="\nNo subjects selected! Do you want to try again? \n(typing no will close the program)",
+							),
+					}
+
+					quitAnswer = inq.prompt(quitConfirmation)
+
+					if quitAnswer['quitConfirmation'] == True:
+						time.sleep(.5)
+						continue
+					else:
+						print("Closing program...")
+						time.sleep(1)
+						exit()
 
 				# confirm with user that they selected the subs they wanted.
 				df = pd.DataFrame(flatSubs, columns=['subject'])
 				print("These are the subjects you've selected:")
 				print(df)
-				time.sleep(1)
 				subsetConfirmation = {
 					inq.Confirm('subsetConfirmation',
 									message="Please confirm your selection. ",
@@ -256,23 +272,24 @@ class mriqcCLI():
 					mriqc = f"""
 						docker run -it --rm -v {BIDSDir}:/data:ro \
 						-v {BIDSDir}/mriqc:/out \
-						poldracklab/mriqc:latest /data /out participant --participant_label {subjects[i][4:]} --no-sub
+						poldracklab/mriqc:latest /data /out group --participant_label {subjects[i][4:]} --no-sub
 					"""
 					proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
 					proc1.wait()
-					totalTime = round((time.time() - StartTime) / 60)
-					print("It took " + str(totalTime) + " minutes to process " + sub)
+					totalTime = round((time.time() - startTime) / 60)
+					print("It took " + str(totalTime) + " minutes to process " + subjects[i])
 					#mriqcCLI.cleanDir(sub, mriqcDir)
 			else:
 				continue
-
+		print("\nProcessing is complete! Output can be found here: " + BIDSDir + "/mriqc")
+		time.sleep(.5)
 
 	# method will check if MRIQC output data already exists for a given subject, ask if user wants to overwrite existing data
 
 	def checkForData(sub):
 		if os.path.isdir(sub) and os.path.getsize(sub) > 0:
 			print("**********\nMRIQC output already exists for " + sub + "!" + "\n**********")
-			time.sleep(2)
+			time.sleep(.5)
 			fileStats = os.stat(sub)
 			modificationTime = time.ctime(fileStats[8])
 			overwriteConfirmation = {
@@ -289,7 +306,7 @@ class mriqcCLI():
 				return True
 			else:
 				print("Skipping subject...\n")
-				time.sleep(1.5)
+				time.sleep(.5)
 				return False
 		elif os.path.isdir(sub) and os.path.getsize(sub) == 0:
 			os.rmdir(sub)
@@ -329,3 +346,5 @@ subjects = qc.getSubs(BIDSDir)
 
 qc.runMriqc(subjects, BIDSDir)
 
+#for i in *mos; do cd $i; mkdir html; cd ..; done
+#for i in *pre; do mv $i*html $i/html; done
