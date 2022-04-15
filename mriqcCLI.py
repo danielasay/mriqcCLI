@@ -1,13 +1,6 @@
 # Created by: Daniel Asay on March 28th 
-# Last edit: April 14th
+# Last edit: April 15th
 
-# Thoughts for creating mriqc pipeline:
-
-# 1) Ask the user which study they want to qc
-# 2) Ask if they want it run on all subjects, only new, or a specific list
-# 3) Confirm the study and the number of subjects that will be processed
-# 4) Show progress bar
-# 5) Built funtionality for running qc on all subjects from all studies
 
 import os
 from tkinter import *
