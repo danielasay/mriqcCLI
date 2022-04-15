@@ -34,9 +34,9 @@ class mriqcCLI():
 			try:
 				studies = [
 					inq.List('studies',
-									message = "Which study would you like to qc?",
-									choices = ['opioid', 'explosive sync', 'bacpac', 'bacpac best', 'mapp2', 'micapp', 'cpira2'],
-								),
+							message = "Which study would you like to qc?",
+							choices = ['opioid', 'explosive sync', 'bacpac', 'bacpac best', 'mapp2', 'micapp', 'cpira2'],
+						),
 				]
 
 				studiesAnswer = inq.prompt(studies)
@@ -45,8 +45,8 @@ class mriqcCLI():
 
 				studyConfirmation = {
 					inq.Confirm('studyConfirmation',
-									message="You've selected the " + studyAnswer + " study. Is that correct?",
-								),
+							message="You've selected the " + studyAnswer + " study. Is that correct?",
+						),
 				}
 
 				confirmationAnswer = inq.prompt(studyConfirmation)
@@ -103,8 +103,8 @@ class mriqcCLI():
 		print(df)
 		subjectConfirmation = {
 			inq.Confirm('subjectConfirmation',
-							message="Would you like to qc all " + str(len(subList)) + " subjects?",
-						),
+					message="Would you like to qc all " + str(len(subList)) + " subjects?",
+				),
 		}
 
 		subjectAnswer = inq.prompt(subjectConfirmation)
@@ -162,8 +162,8 @@ class mriqcCLI():
 				print(df)
 				subsetConfirmation = {
 					inq.Confirm('subsetConfirmation',
-									message="Please confirm your selection. ",
-								),
+							message="Please confirm your selection. ",
+						),
 				}
 
 				subsetAnswer = inq.prompt(subsetConfirmation)
@@ -316,9 +316,9 @@ class mriqcCLI():
 			modificationTime = time.ctime(fileStats[8])
 			overwriteConfirmation = {
 					inq.Confirm('overwriteConfirmation',
-									message="Overwrite the mriqc data generated on " + str(modificationTime[:10] + modificationTime[19:]) + " for " + sub + "?",
-								),
-						}
+							message="Overwrite the mriqc data generated on " + str(modificationTime[:10] + modificationTime[19:]) + " for " + sub + "?",
+						),
+					}
 
 			overwriteAnswer = inq.prompt(overwriteConfirmation)
 
