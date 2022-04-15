@@ -272,7 +272,7 @@ class mriqcCLI():
 					mriqc = f"""
 						docker run -it --rm -v {BIDSDir}:/data:ro \
 						-v {BIDSDir}/mriqc:/out \
-						poldracklab/mriqc:latest /data /out group --participant_label {subjects[i][4:]} --no-sub
+						poldracklab/mriqc:latest /data /out participant --participant_label {subjects[i][4:]} --no-sub
 					"""
 					proc1 = subprocess.Popen(mriqc, shell=True, stdout=subprocess.PIPE)
 					proc1.wait()
@@ -281,8 +281,30 @@ class mriqcCLI():
 					#mriqcCLI.cleanDir(sub, mriqcDir)
 			else:
 				continue
-		print("\nProcessing is complete! Output can be found here: " + BIDSDir + "/mriqc")
+
+		print("\nProcessing is complete! Individual output can be found here: " + BIDSDir + "/mriqc" + "/'sub_name'")
 		time.sleep(.5)
+		groupConfirmation = {
+				inq.Confirm('groupConfirmation',
+					message="Would you like to generate summary spreadsheet of IQMs for the avialable group data?",
+					),
+				}
+		groupAnswer = inq.prompt(groupConfirmation)
+		if groupAnswer['groupConfirmation'] == True:
+			os.chdir(mriqcDir)
+			if not os.path.isdir("group_data"):
+				os.makedirs("group_data")
+			with yaspin(text="Tabulating group data..."):
+				groupMRIQC = f"""
+					docker run -it --rm -v {BIDSDir}:/data:ro \
+					-v {BIDSDir}/mriqc/group_data:/out \
+					poldracklab/mriqc:latest /data /out group --no-sub
+				"""
+				proc2 = subprocess.Popen(groupMRIQC, shell=True, stdout=subprocess.PIPE)
+				proc2.wait()
+			print("Done!")
+			print("tsv and html files can be found here: " + mriqcDir + "/group_data")
+
 
 	# method will check if MRIQC output data already exists for a given subject, ask if user wants to overwrite existing data
 
@@ -296,7 +318,7 @@ class mriqcCLI():
 					inq.Confirm('overwriteConfirmation',
 									message="Overwrite the mriqc data generated on " + str(modificationTime[:10] + modificationTime[19:]) + " for " + sub + "?",
 								),
-				}
+						}
 
 			overwriteAnswer = inq.prompt(overwriteConfirmation)
 
@@ -332,6 +354,7 @@ class mriqcCLI():
 				shutil.move(file, sub + "/html")
 
 
+
 # This is a python dictionary that contains key-value pairs of studies and their respective BIDS directories
 studyPaths = {"opioid": "/PROJECTS/REHARRIS/opioid/opioid_BIDS", "explosiveSync": "", "bacpac": "", "bacpacBest": "", "mapp2": "/PROJECTS/MAPP/MAPP2/data/MAPP2_BIDS", "cpira2": ""}
 
@@ -346,5 +369,5 @@ subjects = qc.getSubs(BIDSDir)
 
 qc.runMriqc(subjects, BIDSDir)
 
-#for i in *mos; do cd $i; mkdir html; cd ..; done
+#for i in *pre; do cd $i; mkdir html; cd ..; done
 #for i in *pre; do mv $i*html $i/html; done
